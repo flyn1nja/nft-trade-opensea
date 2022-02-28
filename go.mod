@@ -1,8 +1,5 @@
-module github.com/flyn1nja/opensea-nft-trade-proj
+module github.com/flyn1nja/nft-trade-opensea
 
-go 1.13
+go 1.16
 
-require (
-	github.com/gorilla/mux v1.8.0
-	rogchap.com/v8go v0.7.0
-)
+// require github.com/toqueteos/webbrowser v1.2.0

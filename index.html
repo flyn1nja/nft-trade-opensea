@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<title>Surf Monkey - NFT trading</title>
+
+<head>
+    <link rel="shortcut icon" href="#">
+    <meta charset="utf-8" />
+    <script src="wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
+            go.run(result.instance);
+        });
+    </script>
+</head>
+
+<a>Nom de la collection </a><input type="text" id="ColName">
+
+<div>
+    <a>Aller chercher </a><a id="ACVal">10</a><a> elements dans cette collection collection</a><br>
+    <input type="range" min="1" max="50" value="10" class="slider" id="AssetCount">
+</div>
+
+<div>
+    <a>Commencer à l'asset n° </a><a id="SOVal">0</a><br>
+    <input type="range" min="0" max="200" value="0" class="slider" id="StartOffset">
+</div>
+
+<button name="ColBtn" id="GetColBtn">Get Collection</button>
+<button name="MetaMaskBtn" id="GetMetaMaskWalletBtn"
+    onclick="console.log('Metamask is activated: ' + window.ethereum.isMetaMask)">Valider portefeuille MetaMask</button>
+<!-- <button name="ColBtn" id="GetColBtn">Get Collection</button> -->
+
+<script>
+    var slider = document.getElementById("AssetCount");
+    var output = document.getElementById("ACVal");
+    var slider2 = document.getElementById("StartOffset");
+    var output2 = document.getElementById("SOVal");
+
+    output.innerHTML = slider.value;
+    output2.innerHTML = slider2.value;
+
+    slider.oninput = function () {
+        output.innerHTML = this.value;
+    }
+
+    slider2.oninput = function () {
+        output2.innerHTML = this.value;
+    }
+
+</script>
+
+</html>

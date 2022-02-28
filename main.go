@@ -3,12 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
-	"os/exec"
-
-	"rogchap.com/v8go"
-
-	mux "github.com/gorilla/mux"
+	"strconv"
+	"syscall/js"
 )
 
 const (
@@ -16,73 +12,86 @@ const (
 	CONN_PORT = "5050"
 	CONN_TYPE = "tcp"
 	CONN_ADDR = "http://localhost:5050"
+
+	GET_COL_URL        = "https://api.opensea.io/api/v1/collection/"
+	GET_COL_ASSETS_URL = "https://api.opensea.io/api/v1/assets?order_by=sale_price&order_direction=asc&offset=%d&limit=%d&collection=%s"
+
+	PRICE_MULT = 1000000000000000000
+
+	API_KEY = "b3e478286c074bbc9d3fe40bc2e3cf50"
 )
 
-var rtr = mux.NewRouter()
-var code = ""
-var browser *exec.Cmd
-var client *http.Client
+// var rtr = mux.NewRouter()
+// var code = ""
+// var browser *exec.Cmd
+// var client *http.Client
+
+var collection string // Nom de la collection à demander
+var max int           // Nombre d'assets à considérer
+var start int         // Commencer à partir du __ième asset de la collection
+
+func init() {
+	flag.StringVar(&collection, "col", "", "Nom de la collection à demander")
+	flag.IntVar(&max, "max", 10, "Nombre d'assets à considérer")
+	flag.IntVar(&start, "start", 0, "Commencer à partir du __ième asset de la collection")
+}
 
 func main() {
 
 	flag.Parse()
 
-	// go func() {
-	// 	StartClient()
-	// }()
-	// source := "const multiply = (a, b) => a * b"
-	// // source := "const multiply = getValx2(1)"
-	// iso1 := v8go.NewIsolate()                                                         // creates a new JavaScript VM
-	// ctx1 := v8go.NewContext(iso1)                                                     // new context within the VM
-	// ctx1.RunScript("const add = (a, b) => a + b", "math.js")
-	// script1, _ := iso1.CompileUnboundScript(source, "test.js", v8go.CompileOptions{}) // compile script to get cached data
-	// val, _ := script1.Run(ctx1)
-	// fmt.Printf("addition result: %s \n", val)
+	getColCB := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 
-	// cachedData := script1.CreateCodeCache()
+		col := js.Global().Get("document").Call("getElementById", "ColName").Get("value").String()
+		count, _ := strconv.Atoi(js.Global().Get("document").Call("getElementById", "ACVal").Get("value").String())
+		begin, _ := strconv.Atoi(js.Global().Get("document").Call("getElementById", "SOVal").Get("value").String())
 
-	// iso2 := v8go.NewIsolate()     // create a new JavaScript VM
-	// ctx2 := v8go.NewContext(iso2) // new context within the VM
+		fmt.Println("Fetch de la collection " + col)
+		// switch len(args) {
+		// case 2:
+		// 	go GetCollection(0, args[0].Int(), args[1].String())
+		// case 3:
+		// 	go GetCollection(args[0].Int(), args[1].Int(), args[2].String())
+		// default:
+		// 	go GetCollection(start, max, collection)
+		// }
 
-	// script2, _ := iso2.CompileUnboundScript(source, "test.js", v8go.CompileOptions{CachedData: cachedData}) // compile script in new isolate with cached data
-	// scval, _ := script2.Run(ctx2)
-	// fmt.Printf("Other value time 2: %s \n", scval)
+		go GetCollection(begin, count, col)
 
-	// jsscript := readScript("./test.js")
+		// cb.Release() // release the function if the button will not be clicked again
+		return nil
+	})
 
-	// println(jsscript)
+	js.Global().Get("document").Call("getElementById", "GetColBtn").Call("addEventListener", "click", getColCB)
+	// c := make(chan struct{}, 0)
+	// js.Global().Set("GetCol", getColCB()))
+	// <-c
 
-	ctx := v8go.NewContext(nil)                             // creates a new V8 context with a new Isolate aka VM
-	ctx.RunScript("const add = (a, b) => a + b", "math.js") // executes a script on the global context
-	ctx.RunScript("const result = add(3, 4)", "main.js")    // any functions previously added to the context can be called
-	val, _ := ctx.RunScript("result", "value.js")           // return a value in JavaScript back to Go
-	fmt.Printf("Addition result: %s \n", val)
+	go GetCollection(start, max, collection)
 
-	ctx.RunScript("./test.js", "cool.js")
-	ctx.RunScript("const result2 = testVal()", "main.js")
-	val2, _ := ctx.RunScript("result2", "value.js")
-	// ctx.RunScript("const result = add(3, 4)", "main.js")
-	// fmt.Printf("addition result: %s \n", val)
-	fmt.Printf("Test result: %s \n", val2)
+	// fmt.Println("hello, webassembly!")
+	// document := js.Global().Get("document")
+	// p := document.Call("createElement", "p")
+	// p.Set("innerHTML", "Hello WASM from Go!")
+	// document.Get("body").Call("appendChild", p)
+	// js.Global().Set("add", js.FuncOf(add))
+
+	Host()
 }
 
-// func readScript(fileToRead string) string {
-// 	file, err := os.Open(fileToRead)
-
-// 	var res strings.Builder
-
-// 	buf := make([]byte, 8)
-
-// 	for err == nil {
-// 		res.Write(buf)
-// 		_, err = file.Read(buf)
-// 	}
-
-// 	return res.String()
+// func enableCors(w *http.ResponseWriter) {
+// 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 // }
 
-// func StartClient() {
-
-// 	// browser = openbrowser(fmt.Sprintf("https://osu.ppy.sh/oauth/authorize?client_id=%d&redirect_uri=%s&response_type=code", CLIEND_ID, CONN_ADDR))
-// 	client = &http.Client{}
+// func add(this js.Value, arg []js.Value) interface{} {
+// 	value1 := js.Global().Get("document").Call("getElementById", arg[0].String()).Get("value").String()
+// 	value2 := js.Global().Get("document").Call("getElementById", arg[1].String()).Get("value").String()
+// 	numTwo, _ := strconv.Atoi(value2)
+// 	numOne, _ := strconv.Atoi(value1)
+// 	document := js.Global().Get("document")
+// 	div := document.Call("createElement", "div")
+// 	div.Set("innerHTML", numOne+numTwo)
+// 	document.Get("body").Call("appendChild", div)
+// 	println(numOne + numTwo)
+// 	return nil
 // }
